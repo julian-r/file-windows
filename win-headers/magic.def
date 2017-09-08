@@ -1,0 +1,13 @@
+LIBRARY   libmagic  
+EXPORTS  
+    magic_open
+    magic_close
+    magic_version
+    magic_check
+    magic_compile	
+    magic_error
+    magic_file 
+    magic_getpath
+    magic_list
+    magic_load
+    magic_setparam
