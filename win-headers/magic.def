@@ -11,3 +11,4 @@ EXPORTS
     magic_list
     magic_load
     magic_setparam
+    getline

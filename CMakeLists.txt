@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.7)
 
 project(file)
 
+set(FILE_VERSION 5.31)
+
 set(WIN_COMPAT_SOURCES 
             file/src/asctime_r.c
             file/src/asprintf.c
@@ -32,15 +34,29 @@ set(LIBMAGIC_SOURCE_FILES
         file/src/fsmagic.c
         file/src/funcs.c
         file/src/is_tar.c
-        file/src/magic.c
+        ${CMAKE_CURRENT_BINARY_DIR}/magic.c
         file/src/print.c
         file/src/readcdf.c
-        file/src/readelf.c
+        ${CMAKE_CURRENT_BINARY_DIR}/readelf.c
         file/src/softmagic.c
 )
 
-# configure_file(${CMAKE_CURRENT_SOURCE_DIR}/file/src/magic.h.in ${CMAKE_CURRENT_SOURCE_DIR}/file/src/magic.h)
-add_definitions(-DHAVE_CONFIG_H -DVERSION="5.31" -DWIN32_LEAN_AND_MEAN -DWIN32 -DPCRE2_STATIC )
+# replace the version in the magic.h.in and write it to magic.h
+FILE(READ file/src/magic.h.in MAGIC_H_CONTENT)
+STRING(REPLACE "X.YY" ${FILE_VERSION} MAGIC_H_CONTENT_NEW "${MAGIC_H_CONTENT}")
+FILE(WRITE file/src/magic.h "${MAGIC_H_CONTENT_NEW}")
+
+
+FILE(READ file/src/readelf.c READELF_C_CONTENT)
+STRING(CONCAT READELF_C_CONTENT_NEW "#include <dirent.h>\n" "${READELF_C_CONTENT}")
+FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/readelf.c "${READELF_C_CONTENT_NEW}")
+
+FILE(READ file/src/magic.c MAGIC_C_CONTENT)
+STRING(CONCAT MAGIC_C_CONTENT_NEW "#include <dirent.h>\n" "${MAGIC_C_CONTENT}")
+FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/magic.c "${MAGIC_C_CONTENT_NEW}")
+
+
+add_definitions(-DHAVE_CONFIG_H -DVERSION="${FILE_VERSION}" -DWIN32_LEAN_AND_MEAN -DWIN32 -DPCRE2_STATIC )
 add_library(libmagic SHARED ${LIBMAGIC_SOURCE_FILES})
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/win-headers pcre2/src file/src dirent/include getopt)
 target_link_libraries(libmagic pcre2-posix shlwapi)
