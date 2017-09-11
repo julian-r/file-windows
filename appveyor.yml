@@ -60,12 +60,12 @@ init:
 
 before_build:
   - ps: 'Write-Host "Running $env:BUILDER with $env:GENERATOR" -ForegroundColor Magenta'
+  - git submodule update --init --recursive
   - cmake.exe -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% %APPVEYOR_BUILD_FOLDER%
 
 
 build_script:
   - ps: 'Write-Host "Running $env:BUILDER:" -ForegroundColor Magenta'
-  - git submodule update --init --recursive
   - cmake --build . --config %CONFIGURATION%
   
 
