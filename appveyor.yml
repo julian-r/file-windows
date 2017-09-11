@@ -1,6 +1,6 @@
 # thanks: https://github.com/OSGeo/geos/blob/master/appveyor.yml
 
-version: 1.0.{build}
+version: 5.32.{build}
 
 image: Visual Studio 2017
 
