@@ -74,22 +74,15 @@ add_executable(file_test file/tests/test.c)
 target_link_libraries(file_test libmagic pcre2-posix shlwapi)
 target_link_libraries(file libmagic pcre2-posix shlwapi)
 
-enable_testing()
-file(GLOB files "file/tests/*.testfile")
-foreach(FILE ${files})
-  string(REGEX MATCH "(.*).testfile" TESTPATH ${FILE})
-  string(REGEX MATCH "\\/(.*).testfile" TESTNAME ${FILE})
-  MESSAGE(${TESTNAME})
-  add_test(NAME ${TESTNAME} COMMAND ${CMAKE_CURRENT_BINARY_DIR}/file_test ${FILE} ${TESTPATH}.result)
-endforeach()
+# enable_testing()
+# file(GLOB files "file/tests/*.testfile")
+# foreach(FILE ${files})
+#   string(REGEX MATCH "(.*).testfile" TESTPATH ${FILE})
+#   string(REGEX MATCH "\\/(.*).testfile" TESTNAME ${FILE})
+#   MESSAGE(${TESTNAME})
+#   add_test(NAME ${TESTNAME} COMMAND ${CMAKE_CURRENT_BINARY_DIR}/file_test ${FILE} ${TESTPATH}.result)
+# endforeach()
 
-# add_custom_command(TARGET ${PROJECT_NAME}
-# COMMAND file 
-# DEPENDS file
-# )
-
-# file(RENAME ${CMAKE_CURRENT_SOURCE_DIR}/pcre/src/pcre2posix.h
-#         DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/pcre/src/regex.h)
 set(MAGIC_FRAGMENT_DIR file/magic/Magdir)
 set(MAGIC_FRAGMENTS 
 ${MAGIC_FRAGMENT_DIR}/acorn 
@@ -391,9 +384,14 @@ configure_file(magic.in magic COPYONLY)
 
 
 add_custom_command(OUTPUT magic.mgc
-COMMAND "${CMAKE_CURRENT_BINARY_DIR}/file" -C -m magic
-DEPENDS magic
+COMMAND "${CMAKE_CURRENT_BINARY_DIR}/file.exe" -C -m magic
+DEPENDS file
 COMMENT "Compiling magic file"
 )
 
-add_custom_target(magic_mgc DEPENDS magic.mgc)
+MESSAGE("${CMAKE_CURRENT_BINARY_DIR}")
+
+add_custom_target(magic_mgc ALL DEPENDS magic.mgc)
+
+
+install(TARGETS file libmagic RUNTIME DESTINATION dist LIBRARY DESTINATION dist)
