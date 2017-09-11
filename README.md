@@ -1,3 +1,5 @@
+![Build status](https://ci.appveyor.com/api/projects/status/9xwg49m6124xa2pp?svg=true)
+
 This aims to have everything one needs to build file on windows with visual studio.
 
 
@@ -14,4 +16,3 @@ This aims to have everything one needs to build file on windows with visual stud
  - all the dependencies are statically linked or compiled into the dll
  - There is a `.def` file in windows headers describing the exports for the linker
  - Since dirent defines some of the symbols used in files `readelf.c` and `magic.c` the include is "patched" into them in the `CMakeLists.txt`
- 
