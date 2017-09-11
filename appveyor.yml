@@ -47,10 +47,6 @@ environment:
       GENERATOR: "NMake Makefiles"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
 
-install:
-  # update submodules
-  - git submodule update --init --recursive
-
 init:
   - ps: 'Write-Host "Building GEOS branch: $env:APPVEYOR_REPO_BRANCH" -ForegroundColor Magenta'
   #- ps: |
@@ -69,6 +65,7 @@ before_build:
 
 build_script:
   - ps: 'Write-Host "Running $env:BUILDER:" -ForegroundColor Magenta'
+  - git submodule update --init --recursive
   - cmake --build . --config %CONFIGURATION%
   
 
