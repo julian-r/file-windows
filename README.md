@@ -1,4 +1,4 @@
-![Build status](https://ci.appveyor.com/api/projects/status/9xwg49m6124xa2pp?svg=true)
+[![Build status](https://ci.appveyor.com/api/projects/status/9xwg49m6124xa2pp?svg=true)](https://ci.appveyor.com/project/julian-r/file-windows)
 
 This aims to have everything one needs to build file on windows with visual studio.
 
