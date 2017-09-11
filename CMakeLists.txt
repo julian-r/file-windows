@@ -388,3 +388,12 @@ endforeach()
 
 # Copy the temporary file to the final location
 configure_file(magic.in magic COPYONLY)
+
+
+add_custom_command(OUTPUT magic.mgc
+COMMAND "${CMAKE_CURRENT_BINARY_DIR}/file" -C -m magic
+DEPENDS magic
+COMMENT "Compiling magic file"
+)
+
+add_custom_target(magic_mgc DEPENDS magic.mgc)
