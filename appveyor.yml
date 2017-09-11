@@ -8,8 +8,8 @@ platform: x64
 
 configuration: Release
 
-shallow_clone: true
-clone_depth: 5
+# shallow_clone: true
+# clone_depth: 5
 
 matrix:
   fast_finish: false # set this flag to immediately finish build once one of the jobs fails.
