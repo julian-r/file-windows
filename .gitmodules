@@ -1,9 +1,9 @@
 [submodule "file"]
 	path = file
-	url = git@github.com:file/file.git
+	url = https://github.com/file/file.git
 [submodule "dirent"]
 	path = dirent
-	url = git@github.com:tronkko/dirent.git
+	url = https://github.com/tronkko/dirent.git
 [submodule "getopt"]
 	path = getopt
-	url = git@github.com:skandhurkat/Getopt-for-Visual-Studio.git
+	url = https://github.com/skandhurkat/Getopt-for-Visual-Studio.git
