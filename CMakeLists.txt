@@ -384,7 +384,7 @@ configure_file(magic.in magic COPYONLY)
 
 
 add_custom_command(OUTPUT magic.mgc
-COMMAND "${CMAKE_CURRENT_BINARY_DIR}/file.exe" -C -m magic
+COMMAND file -C -m magic
 DEPENDS file
 COMMENT "Compiling magic file"
 )
