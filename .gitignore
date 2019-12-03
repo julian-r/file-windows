@@ -80,3 +80,26 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+x64/
+CMakeFiles/
+*.vcxproj
+*.filters
+*.cmake
+*.sln
+*.db
+*.user
+*.suo
+CMakeCache.txt
+magic
+magic.c
+magic.in
+magic.mgc
+readelf.c
+libmagic.dir/
+file.dir/
+file_test.dir/
+pcre2/pcre2-8.dir/
+pcre2/pcre2grep.dir/
+pcre2/pcre2-posix.dir/
+pcre2/pcre2test.dir/
+*.opendb
