@@ -7,7 +7,7 @@ function(cat IN_FILE OUT_FILE)
   file(APPEND ${OUT_FILE} "${CONTENTS}")
 endfunction()
 
-set(FILE_VERSION 5.37)
+set(FILE_VERSION 5.38)
 
 set(WIN_COMPAT_SOURCES 
   file/src/asctime_r.c
@@ -46,6 +46,7 @@ set(LIBMAGIC_SOURCE_FILES
   file/src/readcdf.c
   ${CMAKE_CURRENT_BINARY_DIR}/readelf.c
   file/src/softmagic.c
+  file/src/is_csv.c
 )
 
 # replace the version in the magic.h.in and write it to magic.h
