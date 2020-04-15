@@ -7,7 +7,7 @@ and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
      Original API code Copyright (c) 1997-2012 University of Cambridge
-          New API code Copyright (c) 2016-2017 University of Cambridge
+          New API code Copyright (c) 2016-2018 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -205,19 +205,19 @@ whether its argument, which is assumed to be one code unit, is less than 256.
 The CHMAX_255 macro does not assume one code unit. The maximum length of a MARK
 name must fit in one code unit; currently it is set to 255 or 65535. The
 TABLE_GET macro is used to access elements of tables containing exactly 256
-items. When code points can be greater than 255, a check is needed before
-accessing these tables. */
+items. Its argument is a code unit. When code points can be greater than 255, a
+check is needed before accessing these tables. */
 
 #if PCRE2_CODE_UNIT_WIDTH == 8
 #define MAX_255(c) TRUE
 #define MAX_MARK ((1u << 8) - 1)
+#define TABLE_GET(c, table, default) ((table)[c])
 #ifdef SUPPORT_UNICODE
 #define SUPPORT_WIDE_CHARS
 #define CHMAX_255(c) ((c) <= 255u)
 #else
 #define CHMAX_255(c) TRUE
 #endif  /* SUPPORT_UNICODE */
-#define TABLE_GET(c, table, default) ((table)[c])
 
 #else  /* Code units are 16 or 32 bits */
 #define CHMAX_255(c) ((c) <= 255u)
@@ -226,7 +226,6 @@ accessing these tables. */
 #define SUPPORT_WIDE_CHARS
 #define TABLE_GET(c, table, default) (MAX_255(c)? ((table)[c]):(default))
 #endif
-
 
 
 /* ----------------- Character-handling macros ----------------- */
@@ -351,7 +350,7 @@ because almost all calls are already within a block of UTF-8 only code. */
 
 /* Same as above, but it allows a fully customizable form. */
 #define ACROSSCHAR(condition, eptr, action) \
-  while((condition) && ((eptr) & 0xc0u) == 0x80u) action
+  while((condition) && ((*eptr) & 0xc0u) == 0x80u) action
 
 /* Deposit a character into memory, returning the number of code units. */
 
@@ -457,7 +456,7 @@ code. */
 
 /* Same as above, but it allows a fully customizable form. */
 #define ACROSSCHAR(condition, eptr, action) \
-  if ((condition) && ((eptr) & 0xfc00u) == 0xdc00u) action
+  if ((condition) && ((*eptr) & 0xfc00u) == 0xdc00u) action
 
 /* Deposit a character into memory, returning the number of code units. */
 
@@ -585,6 +584,8 @@ typedef struct pcre2_real_match_context {
 #endif
   int    (*callout)(pcre2_callout_block *, void *);
   void    *callout_data;
+  int    (*substitute_callout)(pcre2_substitute_callout_block *, void *);
+  void    *substitute_callout_data;
   PCRE2_SIZE offset_limit;
   uint32_t heap_limit;
   uint32_t match_limit;
@@ -623,6 +624,7 @@ typedef struct pcre2_real_code {
   uint32_t magic_number;          /* Paranoid and endianness check */
   uint32_t compile_options;       /* Options passed to pcre2_compile() */
   uint32_t overall_options;       /* Options after processing the pattern */
+  uint32_t extra_options;         /* Taken from compile_context */
   uint32_t flags;                 /* Various state flags */
   uint32_t limit_heap;            /* Limit set in the pattern */
   uint32_t limit_match;           /* Limit set in the pattern */
@@ -639,11 +641,13 @@ typedef struct pcre2_real_code {
   uint16_t name_count;            /* Number of name entries in the table */
 } pcre2_real_code;
 
-/* The real match data structure. Define ovector large so that array bound
-checkers don't grumble. Memory for this structure is obtained by calling
-pcre2_match_data_create(), which sets the size as the offset of ovector plus
-pairs of elements for each capturing group. (See also the heapframe structure
-below.) */
+/* The real match data structure. Define ovector as large as it can ever
+actually be so that array bound checkers don't grumble. Memory for this
+structure is obtained by calling pcre2_match_data_create(), which sets the size
+as the offset of ovector plus a pair of elements for each capturable string, so
+the size varies from call to call. As the maximum number of capturing
+subpatterns is 65535 we must allow for 65536 strings to include the overall
+match. (See also the heapframe structure below.) */
 
 typedef struct pcre2_real_match_data {
   pcre2_memctl     memctl;
@@ -653,10 +657,11 @@ typedef struct pcre2_real_match_data {
   PCRE2_SIZE       leftchar;      /* Offset to leftmost code unit */
   PCRE2_SIZE       rightchar;     /* Offset to rightmost code unit */
   PCRE2_SIZE       startchar;     /* Offset to starting code unit */
-  uint16_t         matchedby;     /* Type of match (normal, JIT, DFA) */
+  uint8_t          matchedby;     /* Type of match (normal, JIT, DFA) */
+  uint8_t          flags;         /* Various flags */
   uint16_t         oveccount;     /* Number of pairs */
   int              rc;            /* The return code from the match */
-  PCRE2_SIZE       ovector[10000];/* The first field */
+  PCRE2_SIZE       ovector[131072]; /* Must be last in the structure */
 } pcre2_real_match_data;
 
 
@@ -723,6 +728,8 @@ typedef struct compile_block {
   PCRE2_SIZE erroroffset;          /* Offset of error in pattern */
   uint16_t names_found;            /* Number of entries so far */
   uint16_t name_entry_size;        /* Size of each entry */
+  uint16_t parens_depth;           /* Depth of nested parentheses */
+  uint16_t assert_depth;           /* Depth of nested assertions */
   open_capitem *open_caps;         /* Chain of open capture items */
   named_group *named_groups;       /* Points to vector in pre-compile */
   uint32_t named_group_list_size;  /* Number of entries in the list */
@@ -741,8 +748,6 @@ typedef struct compile_block {
   uint32_t class_range_end;        /* Overall class range end */
   PCRE2_UCHAR nl[4];               /* Newline string when fixed length */
   int  max_lookbehind;             /* Maximum lookbehind (characters) */
-  int  parens_depth;               /* Depth of nested parentheses */
-  int  assert_depth;               /* Depth of nested assertions */
   int  req_varyopt;                /* "After variable item" flag for reqbyte */
   BOOL had_accept;                 /* (*ACCEPT) encountered */
   BOOL had_pruneorskip;            /* (*PRUNE) or (*SKIP) encountered */
@@ -790,11 +795,23 @@ typedef struct heapframe {
   uint8_t return_id;         /* Where to go on in internal "return" */
   uint8_t op;                /* Processing opcode */
 
+  /* At this point, the structure is 16-bit aligned. On most architectures
+  the alignment requirement for a pointer will ensure that the eptr field below
+  is 32-bit or 64-bit aligned. However, on m68k it is fine to have a pointer
+  that is 16-bit aligned. We must therefore ensure that what comes between here
+  and eptr is an odd multiple of 16 bits so as to get back into 32-bit
+  alignment. This happens naturally when PCRE2_UCHAR is 8 bits wide, but needs
+  fudges in the other cases. In the 32-bit case the padding comes first so that
+  the occu field itself is 32-bit aligned. Without the padding, this structure
+  is no longer a multiple of PCRE2_SIZE on m68k, and the check below fails. */
+
 #if PCRE2_CODE_UNIT_WIDTH == 8
   PCRE2_UCHAR occu[6];       /* Used for other case code units */
 #elif PCRE2_CODE_UNIT_WIDTH == 16
   PCRE2_UCHAR occu[2];       /* Used for other case code units */
+  uint8_t unused[2];         /* Ensure 32-bit alignment (see above) */
 #else
+  uint8_t unused[2];         /* Ensure 32-bit alignment (see above) */
   PCRE2_UCHAR occu[1];       /* Used for other case code units */
 #endif
 
@@ -803,7 +820,7 @@ typedef struct heapframe {
   runtime array bound checks don't catch references to it. However, for any
   specific call to pcre2_match() the memory allocated for each frame structure
   allows for exactly the right size ovector for the number of capturing
-  parentheses. */
+  parentheses. (See also the comment for pcre2_real_match_data above.) */
 
   PCRE2_SPTR eptr;           /* MUST BE FIRST */
   PCRE2_SPTR start_match;    /* Can be adjusted by \K */
@@ -812,8 +829,11 @@ typedef struct heapframe {
   uint32_t capture_last;     /* Most recent capture */
   PCRE2_SIZE last_group_offset;  /* Saved offset to most recent group frame */
   PCRE2_SIZE offset_top;     /* Offset after highest capture */
-  PCRE2_SIZE ovector[10000]; /* Must be last in the structure */
+  PCRE2_SIZE ovector[131072]; /* Must be last in the structure */
 } heapframe;
+
+/* This typedef is a check that the size of the heapframe structure is a
+multiple of PCRE2_SIZE. See various comments above. */
 
 typedef char check_heapframe_size[
   ((sizeof(heapframe) % sizeof(PCRE2_SIZE)) == 0)? (+1):(-1)];
@@ -833,6 +853,7 @@ typedef struct match_block {
   uint32_t match_call_count;      /* Number of times a new frame is created */
   BOOL hitend;                    /* Hit the end of the subject at some point */
   BOOL hasthen;                   /* Pattern contains (*THEN) */
+  BOOL allowemptypartial;         /* Allow empty hard partial */
   const uint8_t *lcc;             /* Points to lower casing table */
   const uint8_t *fcc;             /* Points to case-flipping table */
   const uint8_t *ctypes;          /* Points to table of type maps */
@@ -845,6 +866,7 @@ typedef struct match_block {
   PCRE2_SPTR name_table;          /* Table of group names */
   PCRE2_SPTR start_code;          /* For use when recursing */
   PCRE2_SPTR start_subject;       /* Start of the subject string */
+  PCRE2_SPTR check_subject;       /* Where UTF-checked from */
   PCRE2_SPTR end_subject;         /* End of the subject string */
   PCRE2_SPTR end_match_ptr;       /* Subject position at end match */
   PCRE2_SPTR start_used_ptr;      /* Earliest consulted character */
@@ -861,6 +883,7 @@ typedef struct match_block {
   uint32_t nltype;                /* Newline type */
   uint32_t nllen;                 /* Newline string length */
   PCRE2_UCHAR nl[4];              /* Newline string when fixed */
+  pcre2_callout_block *cb;        /* Points to a callout block */
   void  *callout_data;            /* To pass back to callouts */
   int (*callout)(pcre2_callout_block *,void *);  /* Callout function or NULL */
 } match_block;
@@ -877,6 +900,8 @@ typedef struct dfa_match_block {
   PCRE2_SPTR last_used_ptr;       /* Latest consulted character */
   const uint8_t *tables;          /* Character tables */
   PCRE2_SIZE start_offset;        /* The start offset value */
+  PCRE2_SIZE heap_limit;          /* As it says */
+  PCRE2_SIZE heap_used;           /* As it says */
   uint32_t match_limit;           /* As it says */
   uint32_t match_limit_depth;     /* As it says */
   uint32_t match_call_count;      /* Number of calls of internal function */
@@ -884,8 +909,10 @@ typedef struct dfa_match_block {
   uint32_t poptions;              /* Pattern options */
   uint32_t nltype;                /* Newline type */
   uint32_t nllen;                 /* Newline string length */
+  BOOL allowemptypartial;         /* Allow empty hard partial */
   PCRE2_UCHAR nl[4];              /* Newline string when fixed */
   uint16_t bsr_convention;        /* \R interpretation */
+  pcre2_callout_block *cb;        /* Points to a callout block */
   void *callout_data;             /* To pass back to callouts */
   int (*callout)(pcre2_callout_block *,void *);  /* Callout function or NULL */
   dfa_recursion_info *recursive;  /* Linked list of recursion data */

@@ -1,6 +1,6 @@
 # This set of tests is for features that are compatible with all versions of
 # Perl >= 5.10, in non-UTF mode. It should run clean for the 8-bit, 16-bit, and
-# 32-bit PCRE libraries, and also using the perltest.pl script.
+# 32-bit PCRE libraries, and also using the perltest.sh script.
     
 #forbid_utf
 #newline_default lf any anycrlf
@@ -3345,6 +3345,14 @@ No match
     blaH blah 
  0: blaH blah
  1: blaH
+
+/((?i)blah)\s+(?m)A(?i:\1)/
+    blah ABLAH
+ 0: blah ABLAH
+ 1: blah
+\= Expect no match
+    blah aBLAH
+No match
 
 /(?>a*)*/
     a
@@ -8282,16 +8290,6 @@ No match, mark = m
     AAAC
  0: AAC
 
-/a(*PRUNE:X)bc|qq/mark,no_start_optimize
-\= Expect no match
-    axy
-No match, mark = X
-
-/a(*THEN:X)bc|qq/mark,no_start_optimize
-\= Expect no match
-    axy
-No match, mark = X
-
 /(?=a(*MARK:A)b)..x/mark
     abxy
  0: abx
@@ -9740,5 +9738,378 @@ No match
 /[[:digit:]-]+/
     12-24
  0: 12-24
+
+/((?<=((*ACCEPT)) )\1?\b) /
+\= Expect no match     
+    ((?<=((*ACCEPT)) )\\1?\\b)\x20
+No match
+
+/((?<=((*ACCEPT))X)\1?Y)\1/
+    XYYZ
+ 0: YY
+ 1: Y
+ 2: 
+
+/((?<=((*ACCEPT))X)\1?Y(*ACCEPT))\1/
+    XYYZ
+ 0: Y
+ 1: Y
+ 2: 
+
+/(?(DEFINE)(?<optional_a>a?)X)^(?&optional_a)a$/
+    aa
+ 0: aa
+    a
+ 0: a
+
+/^(a?)b(?1)a/
+    abaa
+ 0: abaa
+ 1: a
+    aba 
+ 0: aba
+ 1: a
+    baa
+ 0: baa
+ 1: 
+    ba  
+ 0: ba
+ 1: 
+
+/^(a?)+b(?1)a/
+    abaa
+ 0: abaa
+ 1: 
+    aba 
+ 0: aba
+ 1: 
+    baa
+ 0: baa
+ 1: 
+    ba  
+ 0: ba
+ 1: 
+
+/^(a?)++b(?1)a/
+    abaa
+ 0: abaa
+ 1: 
+    aba 
+ 0: aba
+ 1: 
+    baa
+ 0: baa
+ 1: 
+    ba  
+ 0: ba
+ 1: 
+
+/^(a?)+b/
+    b
+ 0: b
+ 1: 
+    ab
+ 0: ab
+ 1: 
+    aaab 
+ 0: aaab
+ 1: 
+
+/(?=a+)a(a+)++b/
+    aab
+ 0: aab
+ 1: a
+
+/(?<=\G.)/g,aftertext
+    abc
+ 0: 
+ 0+ bc
+ 0: 
+ 0+ c
+ 0: 
+ 0+ 
+
+/(?<=(?=.)?)/
+
+/(?<=(?=.)?+)/
+
+/(?<=(?=.)*)/
+
+/(?<=(?=.){4,5})/
+
+/(?<=(?=.){4,5}x)/
+
+/a(?=.(*:X))(*SKIP:X)(*F)|(.)/
+    abc
+ 0: a
+ 1: a
+
+/a(?>(*:X))(*SKIP:X)(*F)|(.)/
+    abc
+ 0: a
+ 1: a
+
+/a(?:(*:X))(*SKIP:X)(*F)|(.)/
+    abc
+ 0: b
+ 1: b
+
+#pattern no_start_optimize
+
+/(?>a(*:1))(?>b(*:1))(*SKIP:1)x|.*/
+    abc
+ 0: abc
+
+/(?>a(*:1))(?>b)(*SKIP:1)x|.*/
+    abc
+ 0: abc
+
+#subject mark
+
+/a(*ACCEPT:X)b/
+    abc
+ 0: a
+MK: X
+    
+/(?=a(*ACCEPT:QQ)bc)axyz/
+    axyz
+ 0: axyz
+MK: QQ
+
+/(?(DEFINE)(a(*ACCEPT:X)))(?1)b/
+    abc
+ 0: ab
+MK: X
+    
+/a(*F:X)b/
+    abc
+No match, mark = X
+    
+/(?(DEFINE)(a(*F:X)))(?1)b/
+    abc
+No match, mark = X
+
+/a(*COMMIT:X)b/
+    abc
+ 0: ab
+MK: X
+    
+/(?(DEFINE)(a(*COMMIT:X)))(?1)b/
+    abc
+ 0: ab
+MK: X
+    
+/a+(*:Z)b(*COMMIT:X)(*SKIP:Z)c|.*/
+    aaaabd
+ 0: bd
+
+/a+(*:Z)b(*COMMIT:X)(*SKIP:X)c|.*/
+    aaaabd
+No match, mark = X
+
+/a(*COMMIT:X)b/
+    axabc
+No match, mark = X
+
+#pattern -no_start_optimize
+#subject -mark 
+
+/(.COMMIT)(*COMMIT::::::::::interal error:::)/
+
+/(*COMMIT:ÿÿ)/
+
+/(*COMMIT:]w)/
+
+/(?i)A(?^)B(?^x:C D)(?^i)e f/
+    aBCDE F
+ 0: aBCDE F
+\= Expect no match
+    aBCDEF
+No match
+    AbCDe f
+No match
+
+/(*pla:foo).{6}/
+    abcfoobarxyz
+ 0: foobar
+\= Expect no match
+    abcfooba
+No match
+
+/(*positive_lookahead:foo).{6}/
+    abcfoobarxyz
+ 0: foobar
+    
+/(?(*pla:foo).{6}|a..)/
+    foobarbaz
+ 0: foobar
+    abcfoobar       
+ 0: abc
+
+/(?(*positive_lookahead:foo).{6}|a..)/
+    foobarbaz
+ 0: foobar
+    abcfoobar       
+ 0: abc
+    
+/(*plb:foo)bar/
+    abcfoobar
+ 0: bar
+\= Expect no match
+    abcbarfoo     
+No match
+
+/(*positive_lookbehind:foo)bar/
+    abcfoobar
+ 0: bar
+\= Expect no match
+    abcbarfoo
+No match
+    
+/(?(*plb:foo)bar|baz)/
+    abcfoobar
+ 0: bar
+    bazfoobar
+ 0: baz
+    abcbazfoobar
+ 0: baz
+    foobazfoobar    
+ 0: bar
+ 
+/(?(*positive_lookbehind:foo)bar|baz)/
+    abcfoobar
+ 0: bar
+    bazfoobar
+ 0: baz
+    abcbazfoobar
+ 0: baz
+    foobazfoobar    
+ 0: bar
+ 
+/(*nlb:foo)bar/
+    abcbarfoo     
+ 0: bar
+\= Expect no match
+    abcfoobar
+No match
+
+/(*negative_lookbehind:foo)bar/
+    abcbarfoo     
+ 0: bar
+\= Expect no match
+    abcfoobar
+No match
+    
+/(?(*nlb:foo)bar|baz)/
+    abcfoobaz 
+ 0: baz
+    abcbarbaz 
+ 0: bar
+\= Expect no match
+    abcfoobar
+No match
+ 
+/(?(*negative_lookbehind:foo)bar|baz)/
+    abcfoobaz 
+ 0: baz
+    abcbarbaz 
+ 0: bar
+\= Expect no match
+    abcfoobar
+No match
+ 
+/(*atomic:a+)\w/
+    aaab
+ 0: aaab
+\= Expect no match
+    aaaa      
+No match
+
+/   (?<word> \w+ )*    \.   /xi
+    pokus.
+ 0: pokus.
+ 1: pokus
+    
+/(?(DEFINE) (?<word> \w+ ) ) (?&word)*   \./xi
+    pokus.
+ 0: pokus.
+
+/(?(DEFINE) (?<word> \w+ ) ) ( (?&word)* )   \./xi 
+    pokus.
+ 0: pokus.
+ 1: <unset>
+ 2: pokus
+
+/(?&word)*  (?(DEFINE) (?<word> \w+ ) )  \./xi
+    pokus.
+ 0: pokus.
+
+/(?&word)*  \. (?<word> \w+ )/xi
+    pokus.hokus
+ 0: pokus.hokus
+ 1: hokus
+
+/a(?(?=(*:2)b).)/mark
+    abc
+ 0: ab
+MK: 2
+    acb     
+ 0: a
+
+/a(?(?!(*:2)b).)/mark
+    acb
+ 0: ac
+    abc     
+ 0: a
+MK: 2
+
+/(?:a|ab){1}+c/
+\= Expect no match
+    abc
+No match
+
+/(a|ab){1}+c/
+    abc
+No match
+    
+/(a+){1}+a/
+\= Expect no match
+    aaaa
+No match
+
+/(?(DEFINE)(a|ab))(?1){1}+c/
+    abc    
+No match
+
+/(?:a|(?=b)|.)*\z/
+    abc
+ 0: abc
+    
+/(?:a|(?=b)|.)*/
+    abc 
+ 0: a
+    
+/(?<=a(*SKIP)x)|c/
+    abcd
+No match
+    
+/(?<=a(*SKIP)x)|d/
+    abcd
+ 0: d
+ 
+/(?<=(?=.(?<=x)))/aftertext
+    abx
+ 0: 
+ 0+ x
+
+/(?<=(?=(?<=a)))b/
+    ab
+ 0: b
+
+/^(?<A>a)(?(<A>)b)((?<=b).*)$/
+    abc
+ 0: abc
+ 1: a
+ 2: c
 
 # End of testinput1 
