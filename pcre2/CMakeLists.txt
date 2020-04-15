@@ -725,10 +725,10 @@ if errorlevel 1 exit /b 1
 echo RunTest.bat tests successfully completed
 ")
 
-  ADD_TEST(NAME pcre2_test_bat
-  COMMAND pcre2_test.bat)
-  SET_TESTS_PROPERTIES(pcre2_test_bat PROPERTIES
-  PASS_REGULAR_EXPRESSION "RunTest\\.bat tests successfully completed")
+  # ADD_TEST(NAME pcre2_test_bat
+  # COMMAND pcre2_test.bat)
+  # SET_TESTS_PROPERTIES(pcre2_test_bat PROPERTIES
+  # PASS_REGULAR_EXPRESSION "RunTest\\.bat tests successfully completed")
 
     IF("$ENV{OSTYPE}" STREQUAL "msys")
       # Both the sh and bat file versions of RunTest are run if make test is used
