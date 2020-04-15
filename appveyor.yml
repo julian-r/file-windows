@@ -67,6 +67,10 @@ before_build:
 build_script:
   - ps: 'Write-Host "Running $env:BUILDER:" -ForegroundColor Magenta'
   - cmake --build . --config %CONFIGURATION%
+
+test_script:
+  - ctest
+
   
 artifacts:
  - path: libmagic.dll
