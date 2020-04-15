@@ -20,8 +20,13 @@ This aims to have everything one needs to build file on windows with visual stud
  - Since dirent defines some of the symbols used in files `readelf.c` and `magic.c` the include is "patched" into them in the `CMakeLists.txt`
 
 
-## Updating this build
+## Updating file
 
  - Checkout the version in the `file` submodule.
  - Update `CMakeLists.txt`
  - Update `appveyor.yml`
+
+
+## Updating pcre2
+
+ - I disabled the test in the `CMakeFile.txt` manually, the rest is vanilla.

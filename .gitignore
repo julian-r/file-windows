@@ -103,3 +103,7 @@ pcre2/pcre2grep.dir/
 pcre2/pcre2-posix.dir/
 pcre2/pcre2test.dir/
 *.opendb
+
+
+# ignore copied regex.h
+pcre2/src/regex.h
