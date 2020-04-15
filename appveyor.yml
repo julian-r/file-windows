@@ -73,6 +73,9 @@ artifacts:
  - path: file.exe
  - path: magic.mgc
 
+deploy:
+  provider: GitHub
+
 
 
 # If you need to debug AppVeyor session (https://www.appveyor.com/docs/how-to/rdp-to-build-worker), then:
