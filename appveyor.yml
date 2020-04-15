@@ -81,11 +81,6 @@ after_build:
 artifacts:
  - path: file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%.zip
 
-# deploy:
-#   auth_token: FWNoOYIec8CGUTHOKBihYmj9cxd+kHUq1U9jAuXcrQ5ZXvJmOpQ+M6kBrtmWNIs1
-#   provider: GitHub
-
-
 
 # If you need to debug AppVeyor session (https://www.appveyor.com/docs/how-to/rdp-to-build-worker), then:
 # 1. Uncomment the on_finish section below:
