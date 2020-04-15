@@ -35,9 +35,6 @@
 #error "Must implement count leading zeroes"
 #endif
 
-#define RLDI(dst, src, sh, mb, type) \
-	(HI(30) | S(src) | A(dst) | ((type) << 2) | (((sh) & 0x1f) << 11) | (((sh) & 0x20) >> 4) | (((mb) & 0x1f) << 6) | ((mb) & 0x20))
-
 #define PUSH_RLDICR(reg, shift) \
 	push_inst(compiler, RLDI(reg, reg, 63 - shift, shift, 1))
 
@@ -410,6 +407,61 @@ static SLJIT_INLINE sljit_s32 emit_single_op(struct sljit_compiler *compiler, sl
 	}
 
 	SLJIT_UNREACHABLE();
+	return SLJIT_SUCCESS;
+}
+
+static sljit_s32 call_with_args(struct sljit_compiler *compiler, sljit_s32 arg_types, sljit_s32 *src)
+{
+	sljit_s32 arg_count = 0;
+	sljit_s32 word_arg_count = 0;
+	sljit_s32 types = 0;
+	sljit_s32 reg = 0;
+
+	if (src)
+		reg = *src & REG_MASK;
+
+	arg_types >>= SLJIT_DEF_SHIFT;
+
+	while (arg_types) {
+		types = (types << SLJIT_DEF_SHIFT) | (arg_types & SLJIT_DEF_MASK);
+
+		switch (arg_types & SLJIT_DEF_MASK) {
+		case SLJIT_ARG_TYPE_F32:
+		case SLJIT_ARG_TYPE_F64:
+			arg_count++;
+			break;
+		default:
+			arg_count++;
+			word_arg_count++;
+
+			if (arg_count != word_arg_count && arg_count == reg) {
+				FAIL_IF(push_inst(compiler, OR | S(reg) | A(TMP_CALL_REG) | B(reg)));
+				*src = TMP_CALL_REG;
+			}
+			break;
+		}
+
+		arg_types >>= SLJIT_DEF_SHIFT;
+	}
+
+	while (types) {
+		switch (types & SLJIT_DEF_MASK) {
+		case SLJIT_ARG_TYPE_F32:
+		case SLJIT_ARG_TYPE_F64:
+			arg_count--;
+			break;
+		default:
+			if (arg_count != word_arg_count)
+				FAIL_IF(push_inst(compiler, OR | S(word_arg_count) | A(arg_count) | B(word_arg_count)));
+
+			arg_count--;
+			word_arg_count--;
+			break;
+		}
+
+		types >>= SLJIT_DEF_SHIFT;
+	}
+
 	return SLJIT_SUCCESS;
 }
 

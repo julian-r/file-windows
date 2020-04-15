@@ -1,4 +1,4 @@
-.TH PCRE2_COMPILE 3 "16 June 2017" "PCRE2 10.30"
+.TH PCRE2_COMPILE 3 "23 May 2019" "PCRE2 10.34"
 .SH NAME
 PCRE2 - Perl-compatible regular expressions (revised API)
 .SH SYNOPSIS
@@ -53,7 +53,8 @@ The option bits are:
   PCRE2_EXTENDED           Ignore white space and # comments
   PCRE2_FIRSTLINE          Force matching to be before newline
   PCRE2_LITERAL            Pattern characters are all literal
-  PCRE2_MATCH_UNSET_BACKREF  Match unset back references
+  PCRE2_MATCH_INVALID_UTF  Enable support for matching invalid UTF
+  PCRE2_MATCH_UNSET_BACKREF  Match unset backreferences
   PCRE2_MULTILINE          ^ and $ match newlines within data
   PCRE2_NEVER_BACKSLASH_C  Lock out the use of \eC in patterns
   PCRE2_NEVER_UCP          Lock out PCRE2_UCP, e.g. via (*UCP)
@@ -73,7 +74,13 @@ The option bits are:
 PCRE2 must be built with Unicode support (the default) in order to use
 PCRE2_UTF, PCRE2_UCP and related options.
 .P
-The yield of the function is a pointer to a private data structure that
+Additional options may be set in the compile context via the
+.\" HREF
+\fBpcre2_set_compile_extra_options\fP
+.\"
+function.
+.P
+The yield of this function is a pointer to a private data structure that
 contains the compiled pattern, or NULL if an error was detected.
 .P
 There is a complete description of the PCRE2 native API, with more detail on

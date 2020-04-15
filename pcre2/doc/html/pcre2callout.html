@@ -44,6 +44,14 @@ a match context (see <b>pcre2_set_callout()</b> in the
 documentation).
 </P>
 <P>
+When using the <b>pcre2_substitute()</b> function, an additional callout feature
+is available. This does a callout after each change to the subject string and
+is described in the
+<a href="pcre2api.html"><b>pcre2api</b></a>
+documentation; the rest of this document is concerned with callouts during
+pattern matching.
+</P>
+<P>
 Within a regular expression, (?C&#60;arg&#62;) indicates a point at which the external
 function is to be called. Different callout points can be identified by putting
 a number less than 256 after the letter C. The default value is zero.
@@ -143,7 +151,7 @@ branch, automatic anchoring occurs if all branches are anchorable.
 </P>
 <P>
 This optimization is disabled, however, if .* is in an atomic group or if there
-is a back reference to the capturing group in which it appears. It is also
+is a backreference to the capture group in which it appears. It is also
 disabled if the pattern contains (*PRUNE) or (*SKIP). However, the presence of
 callouts does not affect it.
 </P>
@@ -206,18 +214,20 @@ callouts such as the example above are obeyed.
 <br><a name="SEC4" href="#TOC1">THE CALLOUT INTERFACE</a><br>
 <P>
 During matching, when PCRE2 reaches a callout point, if an external function is
-provided in the match context, it is called. This applies to both normal and
-DFA matching. The first argument to the callout function is a pointer to a
-<b>pcre2_callout</b> block. The second argument is the void * callout data that
-was supplied when the callout was set up by calling <b>pcre2_set_callout()</b>
-(see the
+provided in the match context, it is called. This applies to both normal,
+DFA, and JIT matching. The first argument to the callout function is a pointer
+to a <b>pcre2_callout</b> block. The second argument is the void * callout data
+that was supplied when the callout was set up by calling
+<b>pcre2_set_callout()</b> (see the
 <a href="pcre2api.html"><b>pcre2api</b></a>
-documentation). The callout block structure contains the following fields:
+documentation). The callout block structure contains the following fields, not
+necessarily in this order:
 <pre>
   uint32_t      <i>version</i>;
   uint32_t      <i>callout_number</i>;
   uint32_t      <i>capture_top</i>;
   uint32_t      <i>capture_last</i>;
+  uint32_t      <i>callout_flags</i>;
   PCRE2_SIZE   *<i>offset_vector</i>;
   PCRE2_SPTR    <i>mark</i>;
   PCRE2_SPTR    <i>subject</i>;
@@ -231,11 +241,12 @@ documentation). The callout block structure contains the following fields:
   PCRE2_SPTR    <i>callout_string</i>;
 </pre>
 The <i>version</i> field contains the version number of the block format. The
-current version is 1; the three callout string fields were added for this
-version. If you are writing an application that might use an earlier release of
-PCRE2, you should check the version number before accessing any of these
-fields. The version number will increase in future if more fields are added,
-but the intention is never to remove any of the existing fields.
+current version is 2; the three callout string fields were added for version 1,
+and the <i>callout_flags</i> field for version 2. If you are writing an
+application that might use an earlier release of PCRE2, you should check the
+version number before accessing any of these fields. The version number will
+increase in future if more fields are added, but the intention is never to
+remove any of the existing fields.
 </P>
 <br><b>
 Fields for numerical callouts
@@ -307,10 +318,12 @@ PCRE2_UNSET.
 </P>
 <P>
 For DFA matching, the <i>offset_vector</i> field points to the ovector that was
-passed to the matching function in the match data block, but it holds no useful
-information at callout time because <b>pcre2_dfa_match()</b> does not support
-substring capturing. The value of <i>capture_top</i> is always 1 and the value
-of <i>capture_last</i> is always 0 for DFA matching.
+passed to the matching function in the match data block for callouts at the top
+level, but to an internal ovector during the processing of pattern recursions,
+lookarounds, and atomic groups. However, these ovectors hold no useful
+information because <b>pcre2_dfa_match()</b> does not support substring
+capturing. The value of <i>capture_top</i> is always 1 and the value of
+<i>capture_last</i> is always 0 for DFA matching.
 </P>
 <P>
 The <i>subject</i> and <i>subject_length</i> fields contain copies of the values
@@ -341,8 +354,8 @@ callout before an assertion such as (?=ab) the length is 3. For an an
 alternation bar or a closing parenthesis, the length is one, unless a closing
 parenthesis is followed by a quantifier, in which case its length is included.
 (This changed in release 10.23. In earlier releases, before an opening
-parenthesis the length was that of the entire subpattern, and before an
-alternation bar or a closing parenthesis the length was zero.)
+parenthesis the length was that of the entire group, and before an alternation
+bar or a closing parenthesis the length was zero.)
 </P>
 <P>
 The <i>pattern_position</i> and <i>next_item_length</i> fields are intended to
@@ -357,6 +370,36 @@ the zero-terminated name of the most recently passed (*MARK), (*PRUNE), or
 (*THEN) item in the match, or NULL if no such items have been passed. Instances
 of (*PRUNE) or (*THEN) without a name do not obliterate a previous (*MARK). In
 callouts from the DFA matching function this field always contains NULL.
+</P>
+<P>
+The <i>callout_flags</i> field is always zero in callouts from
+<b>pcre2_dfa_match()</b> or when JIT is being used. When <b>pcre2_match()</b>
+without JIT is used, the following bits may be set:
+<pre>
+  PCRE2_CALLOUT_STARTMATCH
+</pre>
+This is set for the first callout after the start of matching for each new
+starting position in the subject.
+<pre>
+  PCRE2_CALLOUT_BACKTRACK
+</pre>
+This is set if there has been a matching backtrack since the previous callout,
+or since the start of matching if this is the first callout from a
+<b>pcre2_match()</b> run.
+</P>
+<P>
+Both bits are set when a backtrack has caused a "bumpalong" to a new starting
+position in the subject. Output from <b>pcre2test</b> does not indicate the
+presence of these bits unless the <b>callout_extra</b> modifier is set.
+</P>
+<P>
+The information in the <b>callout_flags</b> field is provided so that
+applications can track and tell their users how matching with backtracking is
+done. This can be useful when trying to optimize patterns, or just to
+understand how PCRE2 works. There is no support in <b>pcre2_dfa_match()</b>
+because there is no backtracking in DFA matching, and there is no support in
+JIT because JIT is all about maximimizing matching performance. In both these
+cases the <b>callout_flags</b> field is always zero.
 </P>
 <br><a name="SEC5" href="#TOC1">RETURN VALUES FROM CALLOUTS</a><br>
 <P>
@@ -428,9 +471,9 @@ Cambridge, England.
 </P>
 <br><a name="SEC8" href="#TOC1">REVISION</a><br>
 <P>
-Last updated: 14 April 2017
+Last updated: 03 February 2019
 <br>
-Copyright &copy; 1997-2017 University of Cambridge.
+Copyright &copy; 1997-2019 University of Cambridge.
 <br>
 <p>
 Return to the <a href="index.html">PCRE2 index page</a>.

@@ -19,7 +19,8 @@ SYNOPSIS
 <b>#include &#60;pcre2.h&#62;</b>
 </P>
 <P>
-<b>int pcre2_pattern_info(const pcre2 *<i>code</i>, uint32_t <i>what</i>, void *<i>where</i>);</b>
+<b>int pcre2_pattern_info(const pcre2_code *<i>code</i>, uint32_t <i>what</i>,</b>
+<b>   void *<i>where</i>);</b>
 </P>
 <br><b>
 DESCRIPTION
@@ -27,7 +28,7 @@ DESCRIPTION
 <P>
 This function returns information about a compiled pattern. Its arguments are:
 <pre>
-  <i>code</i>     Pointer to a compiled regular expression
+  <i>code</i>     Pointer to a compiled regular expression pattern
   <i>what</i>     What information is required
   <i>where</i>    Where to put the information
 </pre>
@@ -36,12 +37,14 @@ request are as follows:
 <pre>
   PCRE2_INFO_ALLOPTIONS      Final options after compiling
   PCRE2_INFO_ARGOPTIONS      Options passed to <b>pcre2_compile()</b>
-  PCRE2_INFO_BACKREFMAX      Number of highest back reference
+  PCRE2_INFO_BACKREFMAX      Number of highest backreference
   PCRE2_INFO_BSR             What \R matches:
                                PCRE2_BSR_UNICODE: Unicode line endings
                                PCRE2_BSR_ANYCRLF: CR, LF, or CRLF only
   PCRE2_INFO_CAPTURECOUNT    Number of capturing subpatterns
   PCRE2_INFO_DEPTHLIMIT      Backtracking depth limit if set, otherwise PCRE2_ERROR_UNSET
+  PCRE2_INFO_EXTRAOPTIONS    Extra options that were passed in the
+                               compile context
   PCRE2_INFO_FIRSTBITMAP     Bitmap of first code units, or NULL
   PCRE2_INFO_FIRSTCODETYPE   Type of start-of-match information
                                0 nothing set

@@ -9,18 +9,18 @@ dnl The PCRE2_PRERELEASE feature is for identifying release candidates. It might
 dnl be defined as -RC2, for example. For real releases, it should be empty.
 
 m4_define(pcre2_major, [10])
-m4_define(pcre2_minor, [30])
+m4_define(pcre2_minor, [34])
 m4_define(pcre2_prerelease, [])
-m4_define(pcre2_date, [2017-08-14])
+m4_define(pcre2_date, [2019-11-21])
 
 # NOTE: The CMakeLists.txt file searches for the above variables in the first
 # 50 lines of this file. Please update that if the variables above are moved.
 
 # Libtool shared library interface versions (current:revision:age)
-m4_define(libpcre2_8_version,     [6:0:6])
-m4_define(libpcre2_16_version,    [6:0:6])
-m4_define(libpcre2_32_version,    [6:0:6])
-m4_define(libpcre2_posix_version, [2:0:0])
+m4_define(libpcre2_8_version,     [9:0:9])
+m4_define(libpcre2_16_version,    [9:0:9])
+m4_define(libpcre2_32_version,    [9:0:9])
+m4_define(libpcre2_posix_version, [2:3:0])
 
 AC_PREREQ(2.57)
 AC_INIT(PCRE2, pcre2_major.pcre2_minor[]pcre2_prerelease, , pcre2)
@@ -131,7 +131,7 @@ AC_ARG_ENABLE(pcre2-32,
               , enable_pcre2_32=unset)
 AC_SUBST(enable_pcre2_32)
 
-# Handle --dnable-debug (disabled by default)
+# Handle --enable-debug (disabled by default)
 AC_ARG_ENABLE(debug,
               AS_HELP_STRING([--enable-debug],
                              [enable debugging code]),
@@ -143,10 +143,25 @@ AC_ARG_ENABLE(jit,
                              [enable Just-In-Time compiling support]),
               , enable_jit=no)
 
+# This code enables JIT if the hardware supports it.
+if test "$enable_jit" = "auto"; then
+  AC_LANG(C)
+  SAVE_CPPFLAGS=$CPPFLAGS
+  CPPFLAGS=-I$srcdir
+  AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+  #define SLJIT_CONFIG_AUTO 1
+  #include "src/sljit/sljitConfigInternal.h"
+  #if (defined SLJIT_CONFIG_UNSUPPORTED && SLJIT_CONFIG_UNSUPPORTED)
+  #error unsupported
+  #endif]])], enable_jit=yes, enable_jit=no)
+  CPPFLAGS=$SAVE_CPPFLAGS
+  echo checking for JIT support on this hardware... $enable_jit
+fi
+
 # Handle --enable-jit-sealloc (disabled by default)
 AC_ARG_ENABLE(jit-sealloc,
               AS_HELP_STRING([--enable-jit-sealloc],
-                             [enable SELinux compatible execmem allocator in JIT]),
+                             [enable SELinux compatible execmem allocator in JIT (experimental)]),
               , enable_jit_sealloc=no)
 
 # Handle --disable-pcre2grep-jit (enabled by default)
@@ -160,6 +175,12 @@ AC_ARG_ENABLE(pcre2grep-callout,
               AS_HELP_STRING([--disable-pcre2grep-callout],
                              [disable callout script support in pcre2grep]),
               , enable_pcre2grep_callout=yes)
+
+# Handle --disable-pcre2grep-callout-fork (enabled by default)
+AC_ARG_ENABLE(pcre2grep-callout-fork,
+              AS_HELP_STRING([--disable-pcre2grep-callout-fork],
+                             [disable callout script fork support in pcre2grep]),
+              , enable_pcre2grep_callout_fork=yes)
 
 # Handle --enable-rebuild-chartables
 AC_ARG_ENABLE(rebuild-chartables,
@@ -276,7 +297,7 @@ AC_ARG_WITH(parens-nest-limit,
 # Handle --with-heap-limit
 AC_ARG_WITH(heap-limit,
             AS_HELP_STRING([--with-heap-limit=N],
-                           [default limit on heap memory (kilobytes, default=20000000)]),
+                           [default limit on heap memory (kibibytes, default=20000000)]),
             , with_heap_limit=20000000)
 
 # Handle --with-match-limit=N
@@ -330,6 +351,12 @@ AC_ARG_ENABLE(stack-for-recursion,,
 #               AS_HELP_STRING([--disable-stack-for-recursion],
 #                              [don't use stack recursion when matching]),
 #               , enable_stack_for_recursion=yes)
+
+# Handle --disable-percent_zt (set as "auto" by default)
+AC_ARG_ENABLE(percent-zt,
+              AS_HELP_STRING([--disable-percent-zt],
+                             [disable the use of z and t formatting modifiers]),
+              , enable_percent_zt=auto)
 
 # Set the default value for pcre2-8
 if test "x$enable_pcre2_8" = "xunset"
@@ -423,10 +450,10 @@ to set the macro values. In this case, you do not have to set -DHAVE_CONFIG_H,
 but if you do, default values will be taken from config.h for non-boolean
 macros that are not defined on the command line.
 
-Boolean macros such as HAVE_STDLIB_H and SUPPORT_PCRE2_8 should either be defined
-(conventionally to 1) for TRUE, and not defined at all for FALSE. All such
-macros are listed as a commented #undef in config.h.generic. Macros such as
-MATCH_LIMIT, whose actual value is relevant, have defaults defined, but are
+Boolean macros such as HAVE_STDLIB_H and SUPPORT_PCRE2_8 should either be
+defined (conventionally to 1) for TRUE, and not defined at all for FALSE. All
+such macros are listed as a commented #undef in config.h.generic. Macros such
+as MATCH_LIMIT, whose actual value is relevant, have defaults defined, but are
 surrounded by #ifndef/#endif lines so that the value can be overridden by -D.
 
 PCRE2 uses memmove() if HAVE_MEMMOVE is defined; otherwise it uses bcopy() if
@@ -575,6 +602,14 @@ if test "$enable_debug" = "yes"; then
     Define to any value to include debugging code.])
 fi
 
+if test "$enable_percent_zt" = "no"; then
+  AC_DEFINE([DISABLE_PERCENT_ZT], [], [
+    Define to any value to disable the use of the z and t modifiers in
+    formatting settings such as %zu or %td (this is rarely needed).])
+else
+  enable_percent_zt=auto
+fi
+
 # Unless running under Windows, JIT support requires pthreads.
 
 if test "$enable_jit" = "yes"; then
@@ -604,13 +639,21 @@ if test "$enable_pcre2grep_jit" = "yes"; then
 fi
 
 if test "$enable_pcre2grep_callout" = "yes"; then
-  if test "$HAVE_WINDOWS_H" != "1"; then
-    if test "$HAVE_SYS_WAIT_H" != "1"; then
-      AC_MSG_ERROR([Callout script support needs sys/wait.h.])
+  if test "$enable_pcre2grep_callout_fork" = "yes"; then
+    if test "$HAVE_WINDOWS_H" != "1"; then
+      if test "$HAVE_SYS_WAIT_H" != "1"; then
+        AC_MSG_ERROR([Callout script support needs sys/wait.h.])
+      fi
     fi
+    AC_DEFINE([SUPPORT_PCRE2GREP_CALLOUT_FORK], [], [
+      Define to any value to enable fork support in pcre2grep callout scripts.
+      This will have no effect unless SUPPORT_PCRE2GREP_CALLOUT is also
+      defined.])
   fi
   AC_DEFINE([SUPPORT_PCRE2GREP_CALLOUT], [], [
     Define to any value to enable callout script support in pcre2grep.])
+else
+  enable_pcre2grep_callout_fork="no"
 fi
 
 if test "$enable_unicode" = "yes"; then
@@ -694,8 +737,8 @@ fi
 AC_DEFINE_UNQUOTED([LINK_SIZE], [$with_link_size], [
   The value of LINK_SIZE determines the number of bytes used to store
   links as offsets within the compiled regex. The default is 2, which
-  allows for compiled patterns up to 64K long. This covers the vast
-  majority of cases. However, PCRE2 can also be compiled to use 3 or 4
+  allows for compiled patterns up to 65535 code units long. This covers the
+  vast majority of cases. However, PCRE2 can also be compiled to use 3 or 4
   bytes instead. This allows for longer patterns in extreme cases.])
 
 AC_DEFINE_UNQUOTED([PARENS_NEST_LIMIT], [$with_parens_nest_limit], [
@@ -706,10 +749,11 @@ AC_DEFINE_UNQUOTED([PARENS_NEST_LIMIT], [$with_parens_nest_limit], [
 AC_DEFINE_UNQUOTED([MATCH_LIMIT], [$with_match_limit], [
   The value of MATCH_LIMIT determines the default number of times the
   pcre2_match() function can record a backtrack position during a single
-  matching attempt. There is a runtime interface for setting a different limit.
-  The limit exists in order to catch runaway regular expressions that take for
-  ever to determine that they do not match. The default is set very large so
-  that it does not accidentally catch legitimate cases.])
+  matching attempt. The value is also used to limit a loop counter in
+  pcre2_dfa_match(). There is a runtime interface for setting a different
+  limit. The limit exists in order to catch runaway regular expressions that
+  take for ever to determine that they do not match. The default is set very
+  large so that it does not accidentally catch legitimate cases.])
 
 # --with-match-limit-recursion is an obsolete synonym for --with-match-limit-depth
 
@@ -733,11 +777,15 @@ AC_DEFINE_UNQUOTED([MATCH_LIMIT_DEPTH], [$with_match_limit_depth], [
   the maximum amount of heap memory that is used. The value of
   MATCH_LIMIT_DEPTH provides this facility. To have any useful effect, it must
   be less than the value of MATCH_LIMIT. The default is to use the same value
-  as MATCH_LIMIT. There is a runtime method for setting a different limit.])
+  as MATCH_LIMIT. There is a runtime method for setting a different limit. In
+  the case of pcre2_dfa_match(), this limit controls the depth of the internal
+  nested function calls that are used for pattern recursions, lookarounds, and
+  atomic groups.])
 
 AC_DEFINE_UNQUOTED([HEAP_LIMIT], [$with_heap_limit], [
-  This limits the amount of memory that pcre2_match() may use while matching
-  a pattern. The value is in kilobytes.])
+  This limits the amount of memory that may be used while matching
+  a pattern. It applies to both pcre2_match() and pcre2_dfa_match(). It does
+  not apply to JIT matching. The value is in kibibytes (units of 1024 bytes).])
 
 AC_DEFINE([MAX_NAME_SIZE], [32], [
   This limit is parameterized just in case anybody ever wants to
@@ -817,7 +865,7 @@ AC_SUBST(EXTRA_LIBPCRE2_POSIX_LDFLAGS)
 
 # When we run 'make distcheck', use these arguments. Turning off compiler
 # optimization makes it run faster.
-DISTCHECK_CONFIGURE_FLAGS="CFLAGS='' CXXFLAGS='' --enable-pcre2-16 --enable-pcre2-32 --enable-jit --enable-utf"
+DISTCHECK_CONFIGURE_FLAGS="CFLAGS='' CXXFLAGS='' --enable-pcre2-16 --enable-pcre2-32 --enable-jit"
 AC_SUBST(DISTCHECK_CONFIGURE_FLAGS)
 
 # Check that, if --enable-pcre2grep-libz or --enable-pcre2grep-libbz2 is
@@ -1000,13 +1048,14 @@ $PACKAGE-$VERSION configuration summary:
     Rebuild char tables ................ : ${enable_rebuild_chartables}
     Internal link size ................. : ${with_link_size}
     Nested parentheses limit ........... : ${with_parens_nest_limit}
-    Heap limit ......................... : ${with_heap_limit} kilobytes
+    Heap limit ......................... : ${with_heap_limit} kibibytes
     Match limit ........................ : ${with_match_limit}
     Match depth limit .................. : ${with_match_limit_depth}
     Build shared libs .................. : ${enable_shared}
     Build static libs .................. : ${enable_static}
     Use JIT in pcre2grep ............... : ${enable_pcre2grep_jit}
     Enable callouts in pcre2grep ....... : ${enable_pcre2grep_callout}
+    Enable fork in pcre2grep callouts .. : ${enable_pcre2grep_callout_fork}
     Initial buffer size for pcre2grep .. : ${with_pcre2grep_bufsize}
     Maximum buffer size for pcre2grep .. : ${with_pcre2grep_max_bufsize}
     Link pcre2grep with libz ........... : ${enable_pcre2grep_libz}
@@ -1016,6 +1065,7 @@ $PACKAGE-$VERSION configuration summary:
     Valgrind support ................... : ${enable_valgrind}
     Code coverage ...................... : ${enable_coverage}
     Fuzzer support ..................... : ${enable_fuzz_support}
+    Use %zu and %td .................... : ${enable_percent_zt}
 
 EOF
 

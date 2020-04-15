@@ -74,6 +74,10 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR}/win-headers pcre2/src file/src 
 target_link_libraries(libmagic pcre2-posix shlwapi)
 
 add_subdirectory(pcre2)
+
+# copy /pcre2posix.h to regex.h so it can be used as posix regex libary
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pcre2/src/pcre2posix.h ${CMAKE_CURRENT_SOURCE_DIR}/pcre2/src/regex.h COPYONLY)
+
 add_executable(file file/src/file.c)
 add_executable(file_test file/tests/test.c)
 target_link_libraries(file_test libmagic pcre2-posix shlwapi)
@@ -107,9 +111,9 @@ configure_file(magic.in magic COPYONLY)
 
 
 add_custom_command(OUTPUT magic.mgc
-COMMAND file -C -m magic
-DEPENDS file
-COMMENT "Compiling magic file"
+  COMMAND file -C -m magic
+  DEPENDS file
+  COMMENT "Compiling magic file"
 )
 
 add_custom_target(magic_mgc ALL DEPENDS magic.mgc)

@@ -333,13 +333,13 @@
 
 /[[:a\x{100}b:]]/utf
 
-/a[^]b/utf,alt_bsux,allow_empty_class,match_unset_backref
+/a[^]b/utf,allow_empty_class,match_unset_backref
     a\x{1234}b
     a\nb
 \= Expect no match
     ab
 
-/a[^]+b/utf,alt_bsux,allow_empty_class,match_unset_backref
+/a[^]+b/utf,allow_empty_class,match_unset_backref
     aXb
     a\nX\nX\x{1234}b
 \= Expect no match
@@ -813,6 +813,12 @@
 /[\u0100-\u0200]/B,utf,alt_bsux,allow_empty_class,match_unset_backref
 
 /\ud800/utf,alt_bsux,allow_empty_class,match_unset_backref
+
+/^\u{0000000000010ffff}/utf,extra_alt_bsux
+    \x{10ffff}
+
+/\u/utf,alt_bsux
+    \\u
 
 /^a+[a\x{200}]/B,utf
     aa
@@ -2030,8 +2036,8 @@
 # to test 4.
 
 /^(\p{Adlam}+)(\p{Bhaiksuki}+)(\p{Marchen}+)(\p{Newa}+)(\p{Osage}+)
- (\p{Tangut}+)(\p{Masaram_Gondi}+)(\p{Nushu}+)(\p{Soyombo}+)
- (\p{Zanabazar_Square}+)/x,utf
+  (\p{Tangut}+)(\p{Masaram_Gondi}+)(\p{Nushu}+)(\p{Soyombo}+)
+  (\p{Zanabazar_Square}+)/x,utf
     \x{1E900}\x{1E924}\x{1E953}\x{11C00}\x{11C2D}\x{11C3E}\x{11C70}\x{11C77}\x{11CAB}\x{11400}\x{1142F}\x{11455}\x{104B0}\x{104D8}\x{104FB}\x{16FE0}\x{18800}\x{18AF2}\x{11D00}\x{11D3A}\x{11D59}\x{16FE1}\x{1B170}\x{1B2FB}\x{11A50}\x{11A58}\x{11AA2}\x{11A00}\x{11A07}\x{11A47} 
 
 /^\x{1E900}\x{104B0}/i,utf
@@ -2041,23 +2047,136 @@
 /^(?:(\X)(?C))+$/utf
     \x{1E900}\x{1E924}\x{1E953}\x{11C00}\x{11C2D}\x{11C3E}\x{11C70}\x{11C77}\x{11CAB}\x{11400}\x{1142F}\x{11455}\x{104B0}\x{104D8}\x{104FB}\x{16FE0}\x{18800}\x{18AF2}\x{11D00}\x{11D3A}\x{11D59}\x{16FE1}\x{1B170}\x{1B2FB}\x{11A50}\x{11A58}\x{11AA2}\x{11A00}\x{11A07}\x{11A47}\=callout_capture,callout_no_where 
 
-# These two are here because JIT is not yet updated. Also, the very first data
-# line is handled differently by Perl.
+# Similarly for Unicode 11.0.0
+
+/^(\p{Dogra}+)(\p{Gunjala_Gondi}+)(\p{Hanifi_Rohingya}+)(\p{Makasar}+)
+  (\p{Medefaidrin}+)(\p{Old_Sogdian}+)(\p{Sogdian}+)/x,utf
+    \x{11800}\x{11da9}\x{10d27}\x{11ee0}\x{16e48}\x{10f27}\x{10f30} 
+
+# These two are here because of differences from Perl.
 
 /^\X/utf
     A\x{200d}B                     A ZWJ
-    \x{261D}\x{1F3FB}B             E_Base E_Modifier
-    \x{1F466}\x{1F3FF}B            E_Base_GAZ E_Modifier 
-    \x{200d}\x{1F3A4}B             ZWJ Glue_After_ZWJ
-    \x{200d}\x{1F469}B             ZWJ E_Base_GAZ  
+    \x{261d}\x{261d}B              Extended_Pictographic Extended_Pictographic 
+    \x{261D}\x{1F3FB}B             Extended_Pictographic Extend
     \x{1F1E6}\x{1F1E7}B            RegionalIndicator RegionalIndicator 
-    \x{261D}\x{E0100}\x{1F3FB}B\=no_jit    E_Base Extend E_Modifier
-    
+    \x{261D}\x{1F3FB}\x{261d}B     Extended_Pictographic Extend E-P
+    \x{261D}\x{1F3FB}\x{200d}\x{261d}B     Extended_Pictographic Extend ZWJ E-P
+
 # Regional indicators
 
 /^(\X)(\X)/utf,aftertext
-    \x{1F1E6}\x{1F1E7}\x{1F1E7}B\=no_jit
-    \x{1F1E6}\x{1F1E7}\x{1F1E7}\x{1F1E6}B\=no_jit
+    \x{1F1E6}\x{1F1E7}\x{1F1E7}B
+    \x{1F1E6}\x{1F1E7}\x{1F1E7}\x{1F1E6}B
+    
+# More differences from Perl
 
+/^[\p{Arabic}]/utf
+\= Expect no match
+    \x{650}
+    \x{651}  
+    \x{652}  
+    \x{653}  
+    \x{654} 
+    \x{655} 
+    
+/^\p{Common}/utf
+    \x{589}
+    \x{60c}
+    \x{61f}  
+    \x{964}
+    \x{965}  
+
+/^\p{Inherited}/utf
+    \x{64b}
+    \x{654}
+    \x{655}
+    \x{1D1AA} 
+
+/\N{U+}/
+
+/\N{U+}/utf
+
+/\N{U}/
+
+# This tests the non-UTF Unicode NEL pattern whitespace character, only
+# recognized by PCRE2 with /x when there is Unicode support.
+
+/A      
+�B/x
+    AB 
+    
+# This tests Unicode Pattern White Space characters in verb names when they
+# are being processed with PCRE2_EXTENDED. Note: there are UTF-8 characters
+# with code points greater than 255 between A, B, and C in the pattern.
+
+/(*: A‎B C)abc/x,utf,mark,alt_verbnames
+    abc
+    
+# Script run tests: auto-possessification
+
+/^(*sr:.*)/B,utf 
+    paypаl.com   A classic example of why script run checks are a good thing
+
+/^(*sr:.*(*ACCEPT))/utf 
+    paypаl.com   But *ACCEPT breaks things
+
+/^(*sr:\x{2e80}*)/B,utf
+
+/^(*sr:\x{2e80}*)\x{2e80}/B,utf
+
+/(?<!)(*sr:)/B
+
+/(?<=abc(?=X(*sr:BXY)CCC)XBXYCCC)./B
+   abcXBXYCCC!
+
+# Some script run patterns are broken in Perl 5.28.0. These can be moved into
+# test 4 when a mended version of Perl is released.
+
+/^(*sr:.{4})/utf
+    \x{0980}12\x{0993}     Bengali Common-digits Bengali
+    \x{0780}12\x{07b1}     Thaana Common-digits Thaana
+    \x{0e01}12\x{0e5b}     Thai Common-digits Thai
+    \x{1780}12\x{19ff}     Khmer Common-digits Khmer
+    \x{0904}12\x{0939}     Devanagari Common-digits Devanagari
+    A\x{ff10}\x{ff19}B     Latin Common-notascii-digits Latin 
+    A\x{1d7ce}\x{1d7cf}B   Latin fancy-common-digits Latin
+    
+# These ones involve non-ASCII but nevertheless Common digits. As of October
+# 2018 even blead Perl wasn't handling all of these - but is going to. 
+
+/^(*sr:.{4})/utf
+    A\x{ff10}\x{ff19}B     Latin Common-notascii-digits Latin 
+    \x{ff10}\x{ff19}..     Common-notascii-digits Common Common
+    A\x{ff10}BC            Latin Common-notascii-digit Latin Latin
+    A\x{1d7ce}\x{1d7cf}B   Latin fancy-common-digits Latin
+    \x{1d7ce}\x{1d7cf},,   fancy-common-digits Common Common
+    A\x{1d7ce}BC           Latin fancy-common-digit Latin Latin
+    
+# Some Unicode 12.1.0 new script characters
+
+/\p{Elymaic}\p{Nandinagari}\p{Nyiakeng_Puachue_Hmong}\p{Wancho}/utf
+    \x{10fe5}\x{119AC}\x{1E10E}\x{1E2D1} 
+
+# ------- 
+
+# Test reference and errors in non-ASCII characters in group names
+
+/(?'𑠅ABC'...)/I,utf
+   abcde\=copy=𑠅ABC
+
+# Bad ones
+
+/(?'AB၌C'...)\g{AB၌C}/utf
+
+/(?'٠ABC'...)/utf
+
+/(?'²ABC'...)/utf
+
+/(?'X²ABC'...)/utf
+
+# -------
+
+/\p{Any}*xyz/I
 
 # End of testinput5

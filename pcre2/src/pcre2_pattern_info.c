@@ -7,7 +7,7 @@ and semantics are as close as possible to those of the Perl 5 language.
 
                        Written by Philip Hazel
      Original API code Copyright (c) 1997-2012 University of Cambridge
-          New API code Copyright (c) 2016-2017 University of Cambridge
+          New API code Copyright (c) 2016-2018 University of Cambridge
 
 -----------------------------------------------------------------------------
 Redistribution and use in source and binary forms, with or without
@@ -76,6 +76,7 @@ if (where == NULL)   /* Requests field length */
     case PCRE2_INFO_BSR:
     case PCRE2_INFO_CAPTURECOUNT:
     case PCRE2_INFO_DEPTHLIMIT:
+    case PCRE2_INFO_EXTRAOPTIONS:
     case PCRE2_INFO_FIRSTCODETYPE:
     case PCRE2_INFO_FIRSTCODEUNIT:
     case PCRE2_INFO_HASBACKSLASHC:
@@ -142,6 +143,10 @@ switch(what)
   case PCRE2_INFO_DEPTHLIMIT:
   *((uint32_t *)where) = re->limit_depth;
   if (re->limit_depth == UINT32_MAX) return PCRE2_ERROR_UNSET;
+  break;
+
+  case PCRE2_INFO_EXTRAOPTIONS:
+  *((uint32_t *)where) = re->extra_options;
   break;
 
   case PCRE2_INFO_FIRSTCODETYPE:
@@ -385,6 +390,7 @@ while (TRUE)
 #endif
 
     case OP_MARK:
+    case OP_COMMIT_ARG:
     case OP_PRUNE_ARG:
     case OP_SKIP_ARG:
     case OP_THEN_ARG:
