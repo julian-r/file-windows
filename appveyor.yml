@@ -74,6 +74,7 @@ artifacts:
  - path: magic.mgc
 
 deploy:
+  auth_token: FWNoOYIec8CGUTHOKBihYmj9cxd+kHUq1U9jAuXcrQ5ZXvJmOpQ+M6kBrtmWNIs1
   provider: GitHub
 
 
