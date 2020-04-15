@@ -8,8 +8,9 @@ platform: x64
 
 configuration: Release
 
-shallow_clone: true
-# clone_depth: 5
+# shallow clone does not work because of submodules
+# shallow_clone: true
+clone_depth: 1
 
 matrix:
   fast_finish: false # set this flag to immediately finish build once one of the jobs fails.
