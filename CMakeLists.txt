@@ -7,7 +7,7 @@ function(cat IN_FILE OUT_FILE)
   file(APPEND ${OUT_FILE} "${CONTENTS}")
 endfunction()
 
-set(FILE_VERSION 5.38)
+set(FILE_VERSION 5.39)
 
 set(WIN_COMPAT_SOURCES 
   file/src/asctime_r.c
