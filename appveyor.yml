@@ -16,6 +16,11 @@ matrix:
   fast_finish: false # set this flag to immediately finish build once one of the jobs fails.
 
 environment:
+  BUILD_DIR: "%APPVEYOR_BUILD_FOLDER%\\build"
+  INSTALL_DIR: "%APPVEYOR_BUILD_FOLDER%\\install"
+  PCRE2_ROOT: "%APPVEYOR_BUILD_FOLDER%\\pcre2"
+  PCRE2_BUILD_DIR: "%PCRE2_ROOT%\\build"
+  PCRE2_INSTALL_DIR: "%PCRE2_ROOT%\\install_dir"
   matrix:
     - PLATFORM: x86
       BUILDER: CMake
@@ -64,22 +69,26 @@ init:
 before_build:
   - ps: 'Write-Host "Running $env:BUILDER with $env:GENERATOR" -ForegroundColor Magenta'
   - git submodule update --init --recursive
-  - cmake.exe -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% %APPVEYOR_BUILD_FOLDER%
+  - mkdir %BUILD_DIR%
+  - mkdir %PCRE2_BUILD_DIR%
+  - cd %PCRE2_BUILD_DIR% && cmake.exe -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_INSTALL_PREFIX=%PCRE2_INSTALL_DIR% %PCRE2_ROOT%
+  - cd %PCRE2_BUILD_DIR% && cmake --build . --config %CONFIGURATION% && cmake --install . --config %CONFIGURATION%
 
 
 build_script:
   - ps: 'Write-Host "Running $env:BUILDER:" -ForegroundColor Magenta'
-  - cmake --build . --config %CONFIGURATION%
+  - cd %BUILD_DIR% && cmake.exe -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% %APPVEYOR_BUILD_FOLDER%
+  - cd %BUILD_DIR% && cmake --build . --config %CONFIGURATION% && cmake --install . --config %CONFIGURATION%
 
 test_script:
-  - ctest
+  - cd %BUILD_DIR% && ctest
 
 after_build:
   # file_5.32-vs2015-x64.zip
-  - 7z a file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%.zip libmagic.dll file.exe magic.mgc
+  - cd %APPVEYOR_BUILD_FOLDER% && 7z a file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%.zip %INSTALL_DIR%/*
 
 artifacts:
- - path: file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%.zip
+  - path: file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%.zip
 
 
 # If you need to debug AppVeyor session (https://www.appveyor.com/docs/how-to/rdp-to-build-worker), then:

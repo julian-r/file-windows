@@ -84,7 +84,7 @@ x64/
 CMakeFiles/
 *.vcxproj
 *.filters
-*.cmake
+; *.cmake
 *.sln
 *.db
 *.user
@@ -107,3 +107,11 @@ pcre2/pcre2test.dir/
 
 # ignore copied regex.h
 pcre2/src/regex.h
+
+# build dir
+build/
+pcre2/build/
+
+# install dir
+install/
+pcre2/install_dir/
