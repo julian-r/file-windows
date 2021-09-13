@@ -151,14 +151,13 @@ add_custom_command(OUTPUT magic.mgc
 
 add_custom_target(magic_mgc ALL DEPENDS magic.mgc)
 
-install(TARGETS file file_test DESTINATION bin)
-# install(TARGETS libmagic RUNTIME DESTINATION bin)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/magic.mgc DESTINATION bin)
+install(TARGETS file file_test DESTINATION binary)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/magic.mgc DESTINATION binary)
 install(FILES ${LIBMAGIC_SOURCE_DIR}/magic.h DESTINATION include)
 install(TARGETS libmagic
   EXPORT libmagic-target
   RUNTIME DESTINATION lib
-  RUNTIME DESTINATION bin
+  RUNTIME DESTINATION binary
   ARCHIVE DESTINATION lib
   INCLUDES DESTINATION include
   )
