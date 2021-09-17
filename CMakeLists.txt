@@ -76,6 +76,10 @@ FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/readelf.c "${READELF_C_CONTENT_NEW}")
 
 FILE(READ ${LIBMAGIC_SOURCE_DIR}/magic.c MAGIC_C_CONTENT)
 STRING(CONCAT MAGIC_C_CONTENT_NEW "#include <dirent.h>\n" "${MAGIC_C_CONTENT}")
+if(NOT BUILD_SHARED_LIBS)
+  # resolve naming conflict (`__attribute__ ((visibility ("hidden")))` not valid for static library)
+  STRING(REPLACE "DllMain" "__DllMain_DISABLED" MAGIC_C_CONTENT_NEW "${MAGIC_C_CONTENT_NEW}")
+endif()
 FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/magic.c "${MAGIC_C_CONTENT_NEW}")
 
 FILE(READ ${LIBMAGIC_SOURCE_DIR}/file.h FILE_H_CONTENT)

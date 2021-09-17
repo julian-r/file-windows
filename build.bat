@@ -1,3 +1,5 @@
+@echo off
+
 ::prepare build env
 if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat" (
     :: Visual Studio 2019
@@ -46,8 +48,7 @@ cmake --install . --config %CONFIGURATION%
 
 cd %BUILD_DIR%
 echo %APPVEYOR_BUILD_FOLDER%\cmake
-cmake.exe -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% %APPVEYOR_BUILD_FOLDER%
-@REM cmake.exe -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%" "%APPVEYOR_BUILD_FOLDER%"
+cmake.exe -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%" "%APPVEYOR_BUILD_FOLDER%"
 cmake --build . --config %CONFIGURATION%
 cmake --install . --config %CONFIGURATION%
 
