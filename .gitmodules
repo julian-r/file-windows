@@ -7,3 +7,6 @@
 [submodule "getopt"]
 	path = getopt
 	url = https://github.com/skandhurkat/Getopt-for-Visual-Studio.git
+[submodule "pcre2"]
+	path = pcre2
+	url = git@github.com:PhilipHazel/pcre2.git
