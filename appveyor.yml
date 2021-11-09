@@ -1,6 +1,6 @@
 # thanks: https://github.com/OSGeo/geos/blob/master/appveyor.yml
 
-version: 5.39-build{build}
+version: 5.41-build{build}
 
 image: Visual Studio 2019
 

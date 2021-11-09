@@ -107,3 +107,13 @@ pcre2/pcre2test.dir/
 
 # ignore copied regex.h
 pcre2/src/regex.h
+
+# vim files
+.*.sw?
+.*.un~
+
+# build directories
+build*/
+
+# visual studio files
+.vs/

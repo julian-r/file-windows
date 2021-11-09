@@ -7,7 +7,7 @@ function(cat IN_FILE OUT_FILE)
   file(APPEND ${OUT_FILE} "${CONTENTS}")
 endfunction()
 
-set(FILE_VERSION 5.39)
+set(FILE_VERSION 5.41)
 
 set(WIN_COMPAT_SOURCES 
   file/src/asctime_r.c
@@ -68,9 +68,9 @@ FILE(READ file/src/file.h FILE_H_CONTENT)
 STRING(CONCAT FILE_H_CONTENT_NEW "#ifdef WIN32\n#include <unistd.h>\n#include <dirent.h>\n#undef S_IFLNK\n#undef S_IFSOCK\n#endif\n" "${FILE_H_CONTENT}")
 FILE(WRITE file/src/file.h "${FILE_H_CONTENT_NEW}")
 
-add_definitions(-DHAVE_CONFIG_H -DVERSION="${FILE_VERSION}" -DWIN32_LEAN_AND_MEAN -DWIN32 -DPCRE2_STATIC )
 add_library(libmagic SHARED ${LIBMAGIC_SOURCE_FILES})
-include_directories (${CMAKE_CURRENT_SOURCE_DIR}/win-headers pcre2/src file/src dirent/include getopt)
+target_include_directories(libmagic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/win-headers pcre2/src file/src dirent/include getopt)
+target_compile_definitions(libmagic PUBLIC -DHAVE_CONFIG_H -DVERSION="${FILE_VERSION}" -DWIN32_LEAN_AND_MEAN -DWIN32 -DPCRE2_STATIC -DHAVE_FORK=0 -Dpipe=sizeof -Dfcntl=sizeof -DF_SETFD=0)
 target_link_libraries(libmagic pcre2-posix shlwapi)
 
 add_subdirectory(pcre2)
