@@ -69,9 +69,14 @@ STRING(CONCAT FILE_H_CONTENT_NEW "#ifdef WIN32\n#include <unistd.h>\n#include <d
 FILE(WRITE file/src/file.h "${FILE_H_CONTENT_NEW}")
 
 add_definitions(-DHAVE_CONFIG_H -DVERSION="${FILE_VERSION}" -DWIN32_LEAN_AND_MEAN -DWIN32 -DPCRE2_STATIC )
-add_library(libmagic SHARED ${LIBMAGIC_SOURCE_FILES})
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/win-headers pcre2/src file/src dirent/include getopt)
+add_library(libmagicstatic STATIC ${LIBMAGIC_SOURCE_FILES})
+add_library(libmagic       SHARED $<TARGET_OBJECTS:libmagicstatic>) 
 target_link_libraries(libmagic pcre2-posix shlwapi)
+
+set_property(TARGET libmagicstatic PROPERTY ARCHIVE_OUTPUT_NAME libmagic)
+# Fix conflict with dll import lib.
+set_property(TARGET libmagic PROPERTY IMPORT_PREFIX imp)
 
 add_subdirectory(pcre2)
 
@@ -80,8 +85,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pcre2/src/pcre2posix.h ${CMAKE_CURREN
 
 add_executable(file file/src/file.c)
 add_executable(file_test file/tests/test.c)
-target_link_libraries(file_test libmagic pcre2-posix shlwapi)
-target_link_libraries(file libmagic pcre2-posix shlwapi)
+target_link_libraries(file_test libmagicstatic pcre2-posix shlwapi)
+target_link_libraries(file libmagicstatic pcre2-posix shlwapi)
 
 
 # this tests all because of time-zone or crlf errors
