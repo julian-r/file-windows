@@ -13,6 +13,9 @@
 #include <process.h> /* for getpid() and the exec..() family */
 #include <direct.h>  /* for _getcwd() and _chdir() */
 
+// this seems to be needed for test.c in the file source
+#include <getopt.h>
+
 #define srandom srand
 #define random rand
 
