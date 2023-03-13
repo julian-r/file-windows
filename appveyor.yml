@@ -72,7 +72,7 @@ build_script:
   - cmake --build . --config %CONFIGURATION%
 
 test_script:
-  - ctest
+  - ctest --output-on-failure
 
 after_build:
   # file_5.32-vs2015-x64.zip
