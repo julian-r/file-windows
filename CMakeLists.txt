@@ -69,9 +69,9 @@ STRING(CONCAT FILE_H_CONTENT_NEW "#ifdef WIN32\n#include <unistd.h>\n#include <d
 FILE(WRITE file/src/file.h "${FILE_H_CONTENT_NEW}")
 
 # patch test.c and include <getopt.h>
-FILE(READ file/src/test.c TEST_C_CONTENT)
+FILE(READ file/test/test.c TEST_C_CONTENT)
 STRING(CONCAT TEST_C_CONTENT_NEW "#include <getopt.h>\n" "${TEST_C_CONTENT}")
-FILE(WRITE file/src/test.c "${TEST_C_CONTENT_NEW}")
+FILE(WRITE file/test/test.c "${TEST_C_CONTENT_NEW}")
 
 
 add_definitions(-DHAVE_CONFIG_H -DVERSION="${FILE_VERSION}" -DWIN32_LEAN_AND_MEAN -DWIN32 -DPCRE2_STATIC )
