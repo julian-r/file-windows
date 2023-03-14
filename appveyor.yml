@@ -1,6 +1,6 @@
 # thanks: https://github.com/OSGeo/geos/blob/master/appveyor.yml
 
-version: 5.39-build{build}
+version: 5.44-build{build}
 
 image: Visual Studio 2019
 
@@ -17,6 +17,16 @@ matrix:
 
 environment:
   matrix:
+    - PLATFORM: x86
+      BUILDER: CMake
+      GENERATOR: "NMake Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      MSVC_NAME: vs2022
+    - PLATFORM: x64
+      BUILDER: CMake
+      GENERATOR: "NMake Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      MSVC_NAME: vs2022
     - PLATFORM: x86
       BUILDER: CMake
       GENERATOR: "NMake Makefiles"
@@ -51,6 +61,9 @@ init:
   #- ps: |
   #  Write-Host "Build worker environment variables:" -ForegroundColor Magenta
   #      Get-ChildItem Env: | %{"{0}={1}" -f $_.Name,$_.Value}
+  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2022" if "%GENERATOR%"=="NMake Makefiles" if "%PLATFORM%"=="x86" call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat"
+  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2022" if "%GENERATOR%"=="NMake Makefiles" if "%PLATFORM%"=="x64" call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+
   - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" if "%GENERATOR%"=="NMake Makefiles" if "%PLATFORM%"=="x86" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars32.bat"
   - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" if "%GENERATOR%"=="NMake Makefiles" if "%PLATFORM%"=="x64" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
 
@@ -72,7 +85,7 @@ build_script:
   - cmake --build . --config %CONFIGURATION%
 
 test_script:
-  - ctest
+  - ctest --output-on-failure
 
 after_build:
   # file_5.32-vs2015-x64.zip
