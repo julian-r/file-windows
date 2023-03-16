@@ -16,45 +16,127 @@ matrix:
   fast_finish: false # set this flag to immediately finish build once one of the jobs fails.
 
 environment:
+  BUILD_DIR: "%APPVEYOR_BUILD_FOLDER%\\build"
+  INSTALL_DIR: "%APPVEYOR_BUILD_FOLDER%\\install"
+  PCRE2_ROOT: "%APPVEYOR_BUILD_FOLDER%\\pcre2"
+  PCRE2_BUILD_DIR: "%PCRE2_ROOT%\\build"
+  PCRE2_INSTALL_DIR: "%PCRE2_ROOT%\\install_dir"
   matrix:
     - PLATFORM: x86
       BUILDER: CMake
       GENERATOR: "NMake Makefiles"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       MSVC_NAME: vs2022
+      LIB_TYPE: shared
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=ON
+    - PLATFORM: x86
+      BUILDER: CMake
+      GENERATOR: "NMake Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      MSVC_NAME: vs2022
+      LIB_TYPE: static
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=OFF
+
     - PLATFORM: x64
       BUILDER: CMake
       GENERATOR: "NMake Makefiles"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
       MSVC_NAME: vs2022
+      LIB_TYPE: shared
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=ON
+    - PLATFORM: x64
+      BUILDER: CMake
+      GENERATOR: "NMake Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      MSVC_NAME: vs2022
+      LIB_TYPE: static
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=OFF
+
     - PLATFORM: x86
       BUILDER: CMake
       GENERATOR: "NMake Makefiles"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       MSVC_NAME: vs2019
+      LIB_TYPE: shared
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=ON
+    - PLATFORM: x86
+      BUILDER: CMake
+      GENERATOR: "NMake Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      MSVC_NAME: vs2019
+      LIB_TYPE: static
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=OFF
+
     - PLATFORM: x64
       BUILDER: CMake
       GENERATOR: "NMake Makefiles"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       MSVC_NAME: vs2019
+      LIB_TYPE: shared
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=ON
+    - PLATFORM: x64
+      BUILDER: CMake
+      GENERATOR: "NMake Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      MSVC_NAME: vs2019
+      LIB_TYPE: static
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=OFF
+
     - PLATFORM: x86
       BUILDER: CMake
       GENERATOR: "NMake Makefiles"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       MSVC_NAME: vs2017
+      LIB_TYPE: shared
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=ON
+    - PLATFORM: x86
+      BUILDER: CMake
+      GENERATOR: "NMake Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      MSVC_NAME: vs2017
+      LIB_TYPE: static
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=OFF
+
     - PLATFORM: x64
       BUILDER: CMake
       GENERATOR: "NMake Makefiles"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       MSVC_NAME: vs2017
+      LIB_TYPE: shared
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=ON
+    - PLATFORM: x64
+      BUILDER: CMake
+      GENERATOR: "NMake Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      MSVC_NAME: vs2017
+      LIB_TYPE: static
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=OFF
+
     - PLATFORM: x64
       GENERATOR: "NMake Makefiles"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       MSVC_NAME: vs2015
+      LIB_TYPE: shared
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=ON
+    - PLATFORM: x64
+      GENERATOR: "NMake Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      MSVC_NAME: vs2015
+      LIB_TYPE: static
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=OFF
+
     - PLATFORM: x86
       GENERATOR: "NMake Makefiles"
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       MSVC_NAME: vs2015
+      LIB_TYPE: shared
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=ON
+    - PLATFORM: x86
+      GENERATOR: "NMake Makefiles"
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      MSVC_NAME: vs2015
+      LIB_TYPE: static
+      CMAKE_OPTIONS: -DBUILD_SHARED_LIB=OFF
 
 init:
   - ps: 'Write-Host "Building GEOS branch: $env:APPVEYOR_REPO_BRANCH" -ForegroundColor Magenta'
@@ -75,24 +157,39 @@ init:
   - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2015" if "%GENERATOR%"=="NMake Makefiles" if "%PLATFORM%"=="x64" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
 
 before_build:
-  - ps: 'Write-Host "Running $env:BUILDER with $env:GENERATOR" -ForegroundColor Magenta'
   - git submodule update --init --recursive
-  - cmake.exe -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% %APPVEYOR_BUILD_FOLDER%
+  - mkdir %BUILD_DIR%
+  - mkdir %PCRE2_BUILD_DIR%
+
+  - ps: 'Write-Host "Building pcre2" -ForegroundColor Magenta'
+  - cd %PCRE2_BUILD_DIR%
+  - cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_INSTALL_PREFIX="%PCRE2_INSTALL_DIR%" "%PCRE2_ROOT%"
+  - cmake --build . --config %CONFIGURATION%
+  - ps: 'Write-Host "Installing pcre2" -ForegroundColor Magenta'
+  - cmake --install . --config %CONFIGURATION%
+
+  - ps: 'Write-Host "Running $env:BUILDER with $env:GENERATOR" -ForegroundColor Magenta'
+  - cd %BUILD_DIR%
+  - cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% "%CMAKE_OPTIONS%" %APPVEYOR_BUILD_FOLDER%
 
 
 build_script:
   - ps: 'Write-Host "Running $env:BUILDER:" -ForegroundColor Magenta'
+  - cd %BUILD_DIR%
   - cmake --build . --config %CONFIGURATION%
+  - cmake --install . --config %CONFIGURATION%
+
 
 test_script:
   - ctest --output-on-failure
 
 after_build:
-  # file_5.32-vs2015-x64.zip
-  - 7z a file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%.zip libmagic.dll file.exe magic.mgc
+  # file_5.32-vs2015-x64-shared.zip
+  - cd %APPVEYOR_BUILD_FOLDER%
+  - 7z a file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%-%LIB_TYPE%.zip %INSTALL_DIR%/*
 
 artifacts:
-  - path: file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%.zip
+  - path: file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%-%LIB_TYPE%.zip
 
 
 # If you need to debug AppVeyor session (https://www.appveyor.com/docs/how-to/rdp-to-build-worker), then:

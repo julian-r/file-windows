@@ -7,6 +7,11 @@ function(cat IN_FILE OUT_FILE)
   file(APPEND ${OUT_FILE} "${CONTENTS}")
 endfunction()
 
+option(BUILD_SHARED_LIB "build as shared library" ON)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+find_package(pcre2 REQUIRED)
+
 set(FILE_VERSION 5.44)
 
 set(WIN_COMPAT_SOURCES 
@@ -75,19 +80,23 @@ FILE(WRITE file/tests/test.c "${TEST_C_CONTENT_NEW}")
 
 
 add_definitions(-DHAVE_CONFIG_H -DVERSION="${FILE_VERSION}" -DWIN32_LEAN_AND_MEAN -DWIN32 -DPCRE2_STATIC )
-add_library(libmagic SHARED ${LIBMAGIC_SOURCE_FILES})
-include_directories (${CMAKE_CURRENT_SOURCE_DIR}/win-headers pcre2/src file/src dirent/include getopt)
-target_link_libraries(libmagic pcre2-posix shlwapi)
+if(BUILD_SHARED_LIB)
+  add_library(libmagic SHARED ${LIBMAGIC_SOURCE_FILES})
+else()
+  add_definitions(-DBUILD_AS_WINDOWS_STATIC_LIBARAY)
+  add_library(libmagic STATIC ${LIBMAGIC_SOURCE_FILES})
+endif()
+include_directories (${CMAKE_CURRENT_SOURCE_DIR}/win-headers ${PCRE2_INCLUDE_DIRS} file/src dirent/include getopt)
+target_link_libraries(libmagic PRIVATE ${PCRE2_LIBRARIES} ${PCRE2_POSIX_LIBRARIES} shlwapi)
 
-add_subdirectory(pcre2)
 
 # copy /pcre2posix.h to regex.h so it can be used as posix regex libary
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pcre2/src/pcre2posix.h ${CMAKE_CURRENT_SOURCE_DIR}/pcre2/src/regex.h COPYONLY)
+configure_file(${PCRE2_INCLUDE_DIRS}/pcre2posix.h ${PCRE2_INCLUDE_DIRS}/regex.h COPYONLY)
 
 add_executable(file file/src/file.c)
 add_executable(file_test file/tests/test.c)
-target_link_libraries(file_test libmagic pcre2-posix shlwapi)
-target_link_libraries(file libmagic pcre2-posix shlwapi)
+target_link_libraries(file_test PRIVATE libmagic shlwapi)
+target_link_libraries(file PRIVATE libmagic shlwapi)
 
 
 # this tests all because of time-zone or crlf errors
@@ -136,3 +145,25 @@ add_custom_command(OUTPUT magic.mgc
 )
 
 add_custom_target(magic_mgc ALL DEPENDS magic.mgc)
+
+
+install(TARGETS file DESTINATION bin)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/magic.mgc DESTINATION bin)
+install(FILES file/src/magic.h DESTINATION include)
+install(TARGETS libmagic
+  EXPORT libmagic-target
+  RUNTIME DESTINATION lib
+  RUNTIME DESTINATION bin
+  ARCHIVE DESTINATION lib
+  INCLUDES DESTINATION include
+  )
+install(EXPORT libmagic-target
+  FILE libmagic-targets.cmake
+  DESTINATION lib/cmake/libmagic
+  )
+file(WRITE
+  ${CMAKE_BINARY_DIR}/libmagic-config.cmake
+  "include(\${CMAKE_CURRENT_LIST_DIR}/libmagic-targets.cmake)\n")
+install(FILES
+  ${CMAKE_BINARY_DIR}/libmagic-config.cmake
+  DESTINATION lib/cmake/libmagic)
