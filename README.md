@@ -6,7 +6,7 @@ This aims to have everything one needs to build file on windows with visual stud
 ## Checkout with submodules
 
 ```sh
-git submodule update --init --recursiv
+git submodule update --init --recursive
 ```
 
 ## External Dependencies

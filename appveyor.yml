@@ -92,7 +92,7 @@ after_build:
   - 7z a file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%.zip libmagic.dll file.exe magic.mgc
 
 artifacts:
- - path: file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%.zip
+  - path: file_%APPVEYOR_BUILD_VERSION%-%MSVC_NAME%-%PLATFORM%.zip
 
 
 # If you need to debug AppVeyor session (https://www.appveyor.com/docs/how-to/rdp-to-build-worker), then:
